@@ -16,7 +16,7 @@ from textual.widgets import ListView, Tree
 from core.config import ConfigManager
 from core.markdown_utils import MarkdownLink, parse_plugin_url
 from core.navigation import BreadcrumbTrail, breadcrumb_for_path
-from core.plugins import PluginContext, PluginResult
+from core.plugins import PluginContext
 from core.registry import PluginRegistry
 from plugins import BUILTIN_PLUGINS
 from ui.layout import build_main_layout
