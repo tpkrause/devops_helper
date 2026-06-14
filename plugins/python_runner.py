@@ -10,8 +10,10 @@ from __future__ import annotations
 import subprocess
 import sys
 from typing import Any, Dict
+from rich.panel import Panel
 
 from core.plugins import BasePlugin, PluginContext, PluginMetadata
+from core.plugins import PluginResult
 
 
 class PythonRunnerPlugin(BasePlugin):
@@ -24,7 +26,6 @@ class PythonRunnerPlugin(BasePlugin):
 
     @property
     def metadata(self) -> PluginMetadata:
-        """Return metadata describing this plugin."""
         return PluginMetadata(
             name="Python Runner",
             identifier="python_runner",
@@ -32,17 +33,9 @@ class PythonRunnerPlugin(BasePlugin):
         )
 
     def default_arguments(self) -> Dict[str, Any]:
-        """
-        Provide default arguments for the plugin.
-
-        Returns
-        -------
-        dict
-            Default Python code to run.
-        """
         return {"code": "print('No Python code specified.')"}
 
-    def run(self, context: PluginContext, **kwargs: Any) -> str:
+    def run(self, context: PluginContext, **kwargs: Any) -> PluginResult:
         """
         Execute Python code in a subprocess.
 
@@ -79,7 +72,14 @@ class PythonRunnerPlugin(BasePlugin):
                 check=False,
             )
         except Exception as exc:  # pragma: no cover - defensive
-            return f"Error executing Python: {exc}"
+            return PluginResult(
+                renderable=Panel(
+                    f"Error executing Python: {exc}",
+                    title="Python Output",
+                    border_style="red",
+                ),
+                links=[],
+            )
 
         output = []
         output.append(f"$ {display}\n")
@@ -88,4 +88,11 @@ class PythonRunnerPlugin(BasePlugin):
         if result.stderr:
             output.append("\n[stderr]\n")
             output.append(result.stderr)
-        return "".join(output)
+        return PluginResult(
+            renderable=Panel(
+                "".join(output),
+                title="Python Output",
+                border_style="green",
+            ),
+            links=[],
+        )

@@ -3,9 +3,12 @@ Custom plugin: Version Check
 """
 
 from __future__ import annotations
-from typing import Any, Dict
-from core.plugins import BasePlugin, PluginContext, PluginMetadata
 import subprocess
+
+from typing import Any, Dict
+from rich.panel import Panel
+
+from core.plugins import BasePlugin, PluginResult, PluginContext, PluginMetadata
 
 
 class VersionCheckPlugin(BasePlugin):
@@ -20,7 +23,7 @@ class VersionCheckPlugin(BasePlugin):
     def default_arguments(self) -> Dict[str, Any]:
         return {"script_path": "scripts/show_version.py"}
 
-    def run(self, context: PluginContext, **kwargs: Any) -> str:
+    def run(self, context: PluginContext, **kwargs: Any) -> PluginResult:
         script_path = kwargs.get("script_path")
 
         try:
@@ -31,7 +34,7 @@ class VersionCheckPlugin(BasePlugin):
                 text=True,
             )
         except Exception as exc:
-            return f"Error executing version script: {exc}"
+            return PluginResult(Panel(f"Error executing version script: {exc}"), [])
 
         output = [f"$ python3 {script_path}\n"]
         if result.stdout:
@@ -39,4 +42,4 @@ class VersionCheckPlugin(BasePlugin):
         if result.stderr:
             output.append("\n[stderr]\n" + result.stderr)
 
-        return "".join(output)
+        return PluginResult(Panel("".join(output)), [])

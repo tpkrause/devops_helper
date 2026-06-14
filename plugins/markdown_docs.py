@@ -13,12 +13,13 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from rich.markdown import Markdown
 from rich.panel import Panel
 
-from core.plugins import BasePlugin, PluginMetadata, PluginContext
+from core.plugins import BasePlugin, PluginResult
+from core.plugins import PluginMetadata, PluginContext
 
 
 # ------------------------------------------------------------
@@ -79,51 +80,29 @@ class MarkdownDocsPlugin(BasePlugin):
         file_path: Optional[str] = None,
         content: Optional[str] = None,
         **_: object,
-    ) -> Tuple[Panel, List[MarkdownLink]]:
-        """
-        Render markdown from either a file or direct content.
+    ) -> PluginResult:
 
-        Precedence:
-        - If `content` is provided, render that.
-        - Else if `file_path` is provided, load and render the file.
-        """
-
-        # Decide source of markdown text
+        # Determine source
         if content is not None:
             text = content
             title = "Inline Markdown"
         else:
             if not file_path:
-                return (
-                    Panel(
-                        "[red]No file_path or content provided to markdown_docs.[/red]"
-                    ),
-                    [],
+                return PluginResult(
+                    Panel("[red]No file_path or content provided.[/red]"), []
                 )
 
             path = Path(file_path)
-
             if not path.exists():
-                return (
-                    Panel(f"[red]File not found:[/red] {file_path}"),
-                    [],
+                return PluginResult(
+                    Panel(f"[red]File not found:[/red] {file_path}"), []
                 )
 
             text = path.read_text(encoding="utf-8")
             title = str(path)
 
-        # Extract links
         links = extract_links(text)
-
-        # Render markdown (Rich handles formatting)
         md = Markdown(text, hyperlinks=True)
+        panel = Panel(md, title=title, border_style="cyan", expand=True)
 
-        # Wrap in a Panel for nicer display
-        panel = Panel(
-            md,
-            title=title,
-            border_style="cyan",
-            expand=True,
-        )
-
-        return panel, links
+        return PluginResult(panel, links)

@@ -3,9 +3,11 @@ Custom plugin: Kubernetes Deployment Runner
 """
 
 from __future__ import annotations
-from typing import Any, Dict
-from core.plugins import BasePlugin, PluginContext, PluginMetadata
 import subprocess
+
+from typing import Any, Dict
+from core.plugins import BasePlugin, PluginResult, PluginContext, PluginMetadata
+from rich.panel import Panel
 
 
 class K8sDeployPlugin(BasePlugin):
@@ -23,7 +25,7 @@ class K8sDeployPlugin(BasePlugin):
             "namespace": "default",
         }
 
-    def run(self, context: PluginContext, **kwargs: Any) -> str:
+    def run(self, context: PluginContext, **kwargs: Any) -> PluginResult:
         command = kwargs.get("command")
         namespace = kwargs.get("namespace")
 
@@ -38,7 +40,7 @@ class K8sDeployPlugin(BasePlugin):
                 text=True,
             )
         except Exception as exc:
-            return f"Error executing deployment: {exc}"
+            return PluginResult(Panel(f"Error executing deployment: {exc}"), [])
 
         output = [f"$ {full_cmd}\n"]
         if result.stdout:
@@ -46,4 +48,4 @@ class K8sDeployPlugin(BasePlugin):
         if result.stderr:
             output.append("\n[stderr]\n" + result.stderr)
 
-        return "".join(output)
+        return PluginResult(Panel("".join(output)), [])

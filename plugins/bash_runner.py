@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import subprocess
 from typing import Any, Dict
+from rich.panel import Panel
 
 from core.plugins import BasePlugin, PluginContext, PluginMetadata
+from core.plugins import PluginResult
 
 
 class BashRunnerPlugin(BasePlugin):
@@ -22,7 +24,6 @@ class BashRunnerPlugin(BasePlugin):
 
     @property
     def metadata(self) -> PluginMetadata:
-        """Return metadata describing this plugin."""
         return PluginMetadata(
             name="Bash Runner",
             identifier="bash_runner",
@@ -30,17 +31,9 @@ class BashRunnerPlugin(BasePlugin):
         )
 
     def default_arguments(self) -> Dict[str, Any]:
-        """
-        Provide default arguments for the plugin.
-
-        Returns
-        -------
-        dict
-            Default command to run.
-        """
         return {"command": "echo 'No command specified.'"}
 
-    def run(self, context: PluginContext, **kwargs: Any) -> str:
+    def run(self, context: PluginContext, **kwargs: Any) -> PluginResult:
         """
         Execute a shell command.
 
@@ -67,7 +60,14 @@ class BashRunnerPlugin(BasePlugin):
                 check=False,
             )
         except Exception as exc:  # pragma: no cover - defensive
-            return f"Error executing command: {exc}"
+            return PluginResult(
+                renderable=Panel(
+                    f"Error executing command: {exc}",
+                    title="Bash Output",
+                    border_style="red",
+                ),
+                links=[],
+            )
 
         output = []
         output.append(f"$ {command}")
@@ -76,4 +76,9 @@ class BashRunnerPlugin(BasePlugin):
         if result.stderr:
             output.append("\n[stderr]\n")
             output.append(result.stderr)
-        return "".join(output)
+        return PluginResult(
+            renderable=Panel(
+                "".join(output), title="Bash Output", border_style="green"
+            ),
+            links=[],
+        )

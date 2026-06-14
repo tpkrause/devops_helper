@@ -16,7 +16,7 @@ from textual.widgets import ListView, Tree
 from core.config import ConfigManager
 from core.markdown_utils import MarkdownLink, parse_plugin_url
 from core.navigation import BreadcrumbTrail, breadcrumb_for_path
-from core.plugins import PluginContext
+from core.plugins import PluginContext, PluginResult
 from core.registry import PluginRegistry
 from plugins import BUILTIN_PLUGINS
 from ui.layout import build_main_layout
@@ -161,13 +161,8 @@ class DevOpsHelperApp(App):
         plugin = self.registry.instantiate("markdown_docs")
         context = PluginContext()
         result = plugin.run(context, file_path=path)
-
-        if isinstance(result, tuple):
-            renderable, links = result
-            self.current_links = links
-        else:
-            renderable = result
-            self.current_links = []
+        renderable = result.renderable
+        self.current_links = result.links
 
         self.query_one("#output-panel", OutputPanel).show_output(renderable)
         self._push_path_breadcrumb(path)
@@ -185,15 +180,11 @@ class DevOpsHelperApp(App):
         args = plugin.default_arguments().copy()
         args.update(saved_cfg)
 
-        result = plugin.run(context, **args)
         self.config.update_plugin_config(plugin.metadata.identifier, args)
 
-        if isinstance(result, tuple):
-            renderable, links = result
-            self.current_links = links
-        else:
-            renderable = result
-            self.current_links = []
+        result = plugin.run(context, **args)
+        renderable = result.renderable
+        self.current_links = result.links
 
         self.query_one("#output-panel", OutputPanel).show_output(renderable)
 
@@ -220,13 +211,8 @@ class DevOpsHelperApp(App):
             plugin = self.registry.instantiate(plugin_id)
             context = PluginContext()
             result = plugin.run(context, **parsed)
-
-            if isinstance(result, tuple):
-                renderable, links = result
-                self.current_links = links
-            else:
-                renderable = result
-                self.current_links = []
+            renderable = result.renderable
+            self.current_links = result.links
 
             self.query_one("#output-panel", OutputPanel).show_output(renderable)
 
@@ -242,46 +228,6 @@ class DevOpsHelperApp(App):
     def action_breadcrumb_back(self) -> None:
         self.breadcrumb.pop()
         self._refresh_breadcrumb_bar()
-
-    def on_markdown_link_clicked(self, event: MarkdownLinkClicked) -> None:
-        link = event.href
-
-        # Handle plugin:// links
-        parsed = parse_plugin_url(link)
-        if parsed:
-            plugin_id = parsed.pop("plugin_id", None)
-            if not plugin_id:
-                return
-
-            plugin = self.registry.instantiate(plugin_id)
-            context = PluginContext()
-            result = plugin.run(context, **parsed)
-
-            if isinstance(result, tuple):
-                renderable, links = result
-                self.current_links = links
-            else:
-                renderable = result
-                self.current_links = []
-
-            self.query_one("#output-panel", OutputPanel).show_output(renderable)
-
-            # Breadcrumbs for markdown navigation
-            if plugin_id == "markdown_docs" and "file_path" in parsed:
-                self._push_path_breadcrumb(parsed["file_path"])
-            else:
-                self.breadcrumb.clear()
-                self.breadcrumb.push(plugin.metadata.name)
-                self._refresh_breadcrumb_bar()
-
-            return
-
-        # Handle normal http/https links
-        # (You can open them externally or ignore them)
-        # For now, just print to output
-        self.query_one("#output-panel", OutputPanel).show_output(
-            f"External link clicked: {link}"
-        )
 
 
 if __name__ == "__main__":

@@ -9,24 +9,18 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
+from rich.console import RenderableType
+
+
+@dataclass
+class PluginResult:
+    renderable: RenderableType
+    links: List[Any]
 
 
 @dataclass
 class PluginMetadata:
-    """
-    Metadata describing a plugin.
-
-    Attributes
-    ----------
-    name:
-        Human-readable name of the plugin.
-    identifier:
-        Unique identifier used internally and in the registry.
-    description:
-        Short description shown in the top bar when selected.
-    """
-
     name: str
     identifier: str
     description: str
@@ -41,31 +35,17 @@ class PluginContext:
     """
 
     def __init__(self, working_directory: Optional[str] = None) -> None:
-        """
-        Initialize a new plugin context.
-
-        Parameters
-        ----------
-        working_directory:
-            Optional working directory for plugin execution.
-        """
         self.working_directory = working_directory or "."
 
 
 class BasePlugin(ABC):
-    """
-    Abstract base class for all plugins.
-
-    Plugins must provide metadata and implement the `run` method.
-    """
-
     @property
     @abstractmethod
     def metadata(self) -> PluginMetadata:
         raise NotImplementedError
 
     @abstractmethod
-    def run(self, context: PluginContext, **kwargs: Any) -> str:
+    def run(self, context: PluginContext, **kwargs) -> PluginResult:
         raise NotImplementedError
 
     def default_arguments(self) -> Dict[str, Any]:
